@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Prior Scan Checker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+    }
+    .container {
+      max-width: 680px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-top: 8px;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+    p.sub {
+      color: #94a3b8;
+      font-size: 13px;
+    }
+    .search-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .search-row {
+      display: flex;
+      gap: 8px;
+    }
+    input[type="text"] {
+      flex: 1;
+      background: #0f172a;
+      border: 1.5px solid #475569;
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 500;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    input[type="text"]:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+    }
+    button.btn-search {
+      background: #0284c7;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 0 20px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button.btn-search:hover {
+      background: #0369a1;
+    }
+    button.btn-clear {
+      background: #334155;
+      color: #cbd5e1;
+      border: none;
+      border-radius: 8px;
+      padding: 0 12px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    button.btn-clear:hover {
+      background: #475569;
+    }
+    .recents-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    .recent-chip {
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #38bdf8;
+      padding: 3px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .recent-chip:hover {
+      background: #0284c7;
+      color: #ffffff;
+    }
+    #results-area {
+      display: none;
+    }
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .status-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: #34d399;
+    }
+    .btn-copy {
+      background: #047857;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-copy:hover {
+      background: #059669;
+    }
+    .table-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    thead th {
+      background: #162032;
+      color: #94a3b8;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 10px 14px;
+      border-bottom: 1px solid #334155;
+    }
+    tbody tr {
+      border-bottom: 1px solid #283548;
+    }
+    tbody tr:hover {
+      background: #243248;
+    }
+    tbody tr:last-child {
+      border-bottom: none;
+    }
+    td {
+      padding: 12px 14px;
+      font-size: 14px;
+    }
+    .td-date {
+      color: #38bdf8;
+      font-family: monospace;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      width: 130px;
+    }
+    .td-scan {
+      color: #f8fafc;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .empty-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      text-align: center;
+      padding: 30px 16px;
+      color: #94a3b8;
+    }
+    .empty-card h3 {
+      color: #f87171;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+    .spinner {
+      display: none;
+      text-align: center;
+      padding: 20px;
+      color: #38bdf8;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚡ Prior Scan Checker</h1>
+      <p class="sub">Enter registration number to view previously done scans</p>
+    </header>
+
+    <div class="search-card">
+      <form onsubmit="event.preventDefault(); doSearch();">
+        <div class="search-row">
+          <input type="text" id="regInput" placeholder="Enter Reg No (e.g. 183528)" autofocus autocomplete="off" autocapitalize="off" spellcheck="false">
+          <button type="submit" class="btn-search">Search</button>
+          <button type="button" class="btn-clear" onclick="clearInput()">Clear</button>
+        </div>
+      </form>
+
+      <div class="recents-bar" id="recents-bar" style="display: none;">
+        <span>Recent:</span>
+        <div id="recent-chips" style="display:inline-flex; gap:6px; flex-wrap:wrap;"></div>
+      </div>
+    </div>
+
+    <div class="spinner" id="spinner">Searching archive...</div>
+
+    <div id="results-area">
+      <div class="status-bar">
+        <div class="status-text" id="status-text"></div>
+        <button class="btn-copy" id="btn-copy" onclick="copyList()">📋 Copy List</button>
+      </div>
+
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 130px;">Date Done</th>
+              <th>Scan Type Done</th>
+            </tr>
+          </thead>
+          <tbody id="scans-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="empty-area" class="empty-card" style="display: none;">
+      <h3 id="empty-title">No Prior Scans Found</h3>
+      <p id="empty-desc">No past imaging records found for this registration number.</p>
+    </div>
+  </div>
+
+  <script>
+    let currentScans = [];
+    let currentPid = "";
+    const bucketCache = {};
+
+    function getBucket(pid) {
+      const clean = String(pid).trim();
+      const digits = clean.replace(/\D/g, '');
+      if (digits.length > 0) {
+        const num = BigInt(digits) % 1000n;
+        return String(num).padStart(3, '0');
+      }
+      let h = 0;
+      for (let i = 0; i < clean.length; i++) {
+        h = (h * 31 + clean.charCodeAt(i)) % 1000;
+      }
+      return String(Math.abs(h)).padStart(3, '0');
+    }
+
+    async function loadBucket(bucket) {
+      if (bucketCache[bucket]) {
+        return bucketCache[bucket];
+      }
+      try {
+        const resp = await fetch(`./data/${bucket}.json`);
+        if (!resp.ok) return {};
+        const data = await resp.json();
+        bucketCache[bucket] = data;
+        return data;
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function parseDateSortable(dateStr) {
+      if (!dateStr) return 0;
+      const d = Date.parse(dateStr);
+      return isNaN(d) ? 0 : d;
+    }
+
+    async function doSearch(explicitPid) {
+      const input = document.getElementById('regInput');
+      const pid = (explicitPid !== undefined ? explicitPid : input.value).trim();
+      if (!pid) return;
+
+      if (explicitPid !== undefined) {
+        input.value = explicitPid;
+      }
+
+      const spinner = document.getElementById('spinner');
+      const resultsArea = document.getElementById('results-area');
+      const emptyArea = document.getElementById('empty-area');
+
+      spinner.style.display = 'block';
+      resultsArea.style.display = 'none';
+      emptyArea.style.display = 'none';
+
+      const bucket = getBucket(pid);
+      const data = await loadBucket(bucket);
+      spinner.style.display = 'none';
+
+      // Look up PID: try exact, upper, and stripped leading zeros
+      let scans = data[pid] || data[pid.toUpperCase()];
+      if (!scans && /^\d+$/.test(pid)) {
+        scans = data[pid.replace(/^0+/, '')];
+      }
+
+      if (!scans || scans.length === 0) {
+        emptyArea.style.display = 'block';
+        document.getElementById('empty-title').textContent = `No Prior Scans Found for "${pid}"`;
+        return;
+      }
+
+      currentPid = pid;
+      // Sort newest to oldest
+      currentScans = scans.slice().sort((a, b) => parseDateSortable(b[0]) - parseDateSortable(a[0]));
+
+      addRecent(currentPid);
+
+      document.getElementById('status-text').textContent = `✅ Patient ${currentPid} — ${currentScans.length} prior scan${currentScans.length > 1 ? 's' : ''} found`;
+
+      const tbody = document.getElementById('scans-tbody');
+      tbody.innerHTML = '';
+      currentScans.forEach(s => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="td-date">${escapeHtml(s[0])}</td>
+          <td class="td-scan">${escapeHtml(s[1])}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      resultsArea.style.display = 'block';
+    }
+
+    function clearInput() {
+      document.getElementById('regInput').value = '';
+      document.getElementById('regInput').focus();
+      document.getElementById('results-area').style.display = 'none';
+      document.getElementById('empty-area').style.display = 'none';
+      currentScans = [];
+      currentPid = '';
+    }
+
+    function copyList() {
+      if (!currentScans || currentScans.length === 0) return;
+      const lines = currentScans.map(s => `${s[0]}: ${s[1]}`);
+      const text = lines.join('\n');
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('btn-copy');
+        const old = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => { btn.textContent = old; }, 1800);
+      });
+    }
+
+    function loadRecents() {
+      try {
+        const raw = localStorage.getItem('prior_recents_gh');
+        const list = raw ? JSON.parse(raw) : [];
+        const container = document.getElementById('recent-chips');
+        container.innerHTML = '';
+        if (list.length === 0) {
+          document.getElementById('recents-bar').style.display = 'none';
+          return;
+        }
+        document.getElementById('recents-bar').style.display = 'flex';
+        list.slice(0, 6).forEach(pid => {
+          const chip = document.createElement('span');
+          chip.className = 'recent-chip';
+          chip.textContent = pid;
+          chip.onclick = () => doSearch(pid);
+          container.appendChild(chip);
+        });
+      } catch (e) {}
+    }
+
+    function addRecent(pid) {
+      try {
+        let raw = localStorage.getItem('prior_recents_gh');
+        let list = raw ? JSON.parse(raw) : [];
+        list = list.filter(x => x !== pid);
+        list.unshift(pid);
+        localStorage.setItem('prior_recents_gh', JSON.stringify(list.slice(0, 10)));
+        loadRecents();
+      } catch (e) {}
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    window.addEventListener('focus', async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        const clean = (text || '').trim();
+        if (clean && clean.length >= 2 && clean.length <= 16 && /^[A-Za-z0-9\-_]+$/.test(clean)) {
+          const input = document.getElementById('regInput');
+          if (input.value !== clean) {
+            doSearch(clean);
+          }
+        }
+      } catch (e) {}
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadRecents();
+      document.getElementById('regInput').focus();
+    });
+  </script>
+</body>
+</html>
